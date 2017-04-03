@@ -11,10 +11,19 @@ var UserSchema = new Schema({
 UserSchema.statics.validPassword = function validPassword(rawPassword, user) {
   var deferred = q.defer()
 
-  bcrypt.compare(rawPassword, user.password)
-    .then(function(res) {
-      deferred.resolve(res)
-    })
+  if (user) {
+    bcrypt.compare(rawPassword, user.password)
+      .then(function(res) {
+        if (res) {
+          deferred.resolve(res)
+        } else {
+          deferred.reject(res)
+        }
+      })
+  } else {
+    deferred.reject(res);
+  }
+
 
   return deferred.promise
 }

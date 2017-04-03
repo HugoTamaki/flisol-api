@@ -3,10 +3,12 @@ var app = express();
 var bodyParser = require('body-parser');
 var cors = require('cors');
 var jwt = require('jsonwebtoken');
+var expressJWT = require('express-jwt');
 
 app.use(bodyParser.urlencoded({extend: true}));
 app.use(bodyParser.json());
 app.use(cors());
+app.use(expressJWT({secret: 'mysecrethere'}).unless({ path: ['/api/login', '/api/dogs'] }))
 
 var port = process.env.PORT || 8080;
 
@@ -21,6 +23,12 @@ router.get('/', function(req, res) {
 
 router.route('/dogs')
   .get(function(req, res) {
+    // var token = req.get('Authorization').split(' ')[1];
+    // var decoded = jwt.verify(token, 'mysecrethere');
+    // console.log('TOKEN: ', token);
+    // console.log('NAME: ', decoded['_doc'].email);
+    // console.log('PASSWORD: ', decoded['_doc'].password);
+
     Dog.find(function(err, dogs) {
       if (err)
         res.send(err);
@@ -32,20 +40,15 @@ router.route('/dogs')
 router.route('/login')
   .post(function(req, res) {
     User.where('email', req.body.user.email).findOne(function(err, user) {
-      if (user) {
-        User.validPassword(req.body.user.password, user)
-          .then(function(valid) {
-            if (valid) {
-              var token = jwt.sign(user, 'mysecrethere')
-              res.setHeader('Token', token)
-              res.json('valid user')
-            } else {
-              res.json('invalid email or password')
-            }
-          })
-      } else {
-        res.json('invalid email or password')
-      }
+      User.validPassword(req.body.user.password, user)
+        .then(function(valid) {
+          var token = jwt.sign(user, 'mysecrethere')
+          res.setHeader('Token', token)
+          res.json('valid user')
+        })
+        .catch(function() {
+          res.json('invalid email or password')
+        })
     });
 
   })
